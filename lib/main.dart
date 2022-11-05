@@ -1,41 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 
-void main(){
-  runApp(MaterialApp(
-    home: Home(),
-  ));
-}
+void main() => runApp(
+    MaterialApp(
+      home: Home(),
+    )
+);
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
-
   @override
-  State<Home> createState() => _HomeState();
+  _HomeState createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
 
   _recuperarBancoDados() async {
-    final caminhoBancoDados = await getDatabasesPath(); //Temos o caminho do banco de dados
-    final localBancoDados = join(caminhoBancoDados, "banco.db");  //Temos o caminho + o nome que vms dar à esse banco de dados
-    //Criando o bando de dados
-    var retorno = await openDatabase(
-      localBancoDados,  //Temos o caminho
-      version: 1,  //Vamos atualizando a versão de acordo que vamos atualizando a versão do nosso app
-      onCreate: (db, dbVersaoRecente){ //No onCreate passamos uma função anônima com 2 parâmetros: os dados e a última versão
-        //Criar uma tabela com o nome usuarios, a primeira coluna será a chave primária e vai incrementar automaticamente o numero na medida
-        //que vamos adicionando itens à nossa tabela. o nome será strings e a idade inteiros
-      String sql = "CREATE TABLE usuarios (id INTEGER PRIMARY KEY AUTOINCREMENTE, nome VARCHAR, idade INTEGER) ";
-      db.execute(sql);
-      }
+
+    final caminhoBancoDados = await getDatabasesPath();
+    final localBancoDados = join(caminhoBancoDados, "banco.db");
+
+    Database bd = await openDatabase(
+        localBancoDados,
+        version: 1,
+        onCreate: (Database db, int version) async {
+          String sql = "CREATE TABLE usuarios (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, nome VARCHAR(200) NOT NULL, idade INTEGER NOT NULL) ";
+          await db.execute(sql);
+        }
     );
-    print("aberto: "+retorno.isOpen.toString()); //Quando colocamos .isOpen , podemos verificar se a tabela está criada, ou seja, aberta ou não
+
+    return bd;
+    //print("aberto: " + bd.isOpen.toString() );
+
   }
+
+  _salvar() async {  //MÉTODO PARA SALVAR DADOS NO BANCO DE DADOS
+
+    Database bd = await _recuperarBancoDados();
+
+    Map<String, dynamic> dadosUsuario = {  //Map que usamos para passar os dados
+      "nome" : "Maria Silva",
+      "idade" : 58
+    };
+    int id = await bd.insert("usuarios", dadosUsuario);  //Uso o insert para adicionar dados. Sempre que iserimos um novo dado, ele retorna o id gerado
+    print("Salvo: $id " );  //Vai printar no LogCat o id gerado automaticamente pelo autoincrement
+
+  }
+
   @override
   Widget build(BuildContext context) {
-    _recuperarBancoDados();
+
+    _salvar();
+
     return Container();
   }
 }
+
